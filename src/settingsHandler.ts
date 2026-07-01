@@ -26,10 +26,6 @@ interface Settings {
     ciderApiVersion?: '3' | '4';
     /** Scoped Cider 4 API token. Cider 3 keeps using appleMusicAppToken. */
     ciderV4AppToken?: string;
-    /** Twitch login name to listen to for the !voteskip command. Empty = disabled. */
-    twitchChannel: string;
-    /** Number of unique viewer votes required to trigger a skip. */
-    voteSkipThreshold: number;
     [key: string]: any; // Allow additional properties
 }
 
@@ -61,6 +57,8 @@ class SettingsHandler {
             primarySearchPlatform: 'spotify',
             ciderApiVersion: '3',
             ciderV4AppToken: '',
+            twitchChannel: '',
+            voteSkipThreshold: 8,
         };
     }
 
@@ -82,6 +80,8 @@ class SettingsHandler {
                 channelPointRequestsEnabled: parsed.channelPointRequestsEnabled ?? true,
                 ciderApiVersion: parsed.ciderApiVersion || '3',
                 ciderV4AppToken: parsed.ciderV4AppToken || '',
+                twitchChannel: (parsed.twitchChannel || '').trim(),
+                voteSkipThreshold: Math.max(2, Number(parsed.voteSkipThreshold) || 8),
             };
 
             // These fields were briefly written by an incomplete multi-platform
