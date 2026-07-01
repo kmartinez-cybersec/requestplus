@@ -26,6 +26,8 @@ interface Settings {
     ciderApiVersion?: '3' | '4';
     /** Scoped Cider 4 API token. Cider 3 keeps using appleMusicAppToken. */
     ciderV4AppToken?: string;
+    twitchChannel: string;
+    voteSkipThreshold: number;
     [key: string]: any; // Allow additional properties
 }
 
