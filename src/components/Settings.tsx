@@ -43,6 +43,8 @@ interface SettingsState {
   ciderApiVersion?: '3' | '4';
   ciderV4AppToken?: string;
   primarySearchPlatform: string;
+  twitchChannel: string;
+  voteSkipThreshold: number;
   [key: string]: any;
 }
 
@@ -566,6 +568,48 @@ export function Settings({
                     />
                   </div>
                 )}
+              </div>
+
+              <div className="space-y-3 p-3 bg-slate-900/30 rounded-lg">
+                <div className="space-y-2">
+                  <Label className="text-white" htmlFor="twitchChannel">{t('CLIENT_TWITCH_CHANNEL', locale)}</Label>
+                  <p className="text-xs text-gray-400">
+                    {t('CLIENT_TWITCH_CHANNEL_DESC', locale)}
+                  </p>
+                  <Input
+                    id="twitchChannel"
+                    type="text"
+                    placeholder="yourtwitchname"
+                    value={settings.twitchChannel || ''}
+                    onChange={(event) =>
+                      setSettings({
+                        ...settings,
+                        twitchChannel: event.target.value.trim().toLowerCase()
+                      })
+                    }
+                    className="bg-slate-900/50 border-purple-500/30 text-white"
+                  />
+                </div>
+
+                <div className="space-y-2 border-t border-slate-700/60 pt-3">
+                  <Label className="text-white" htmlFor="voteSkipThreshold">{t('CLIENT_VOTE_SKIP_THRESHOLD', locale)}</Label>
+                  <p className="text-xs text-gray-400">
+                    {t('CLIENT_VOTE_SKIP_THRESHOLD_DESC', locale)}
+                  </p>
+                  <Input
+                    id="voteSkipThreshold"
+                    type="number"
+                    min={2}
+                    value={settings.voteSkipThreshold || 8}
+                    onChange={(event) =>
+                      setSettings({
+                        ...settings,
+                        voteSkipThreshold: Math.max(2, Number.parseInt(event.target.value, 10) || 8)
+                      })
+                    }
+                    className="bg-slate-900/50 border-purple-500/30 text-white"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-3 bg-slate-900/30 rounded-lg">
