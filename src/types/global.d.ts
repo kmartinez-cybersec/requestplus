@@ -33,6 +33,8 @@ interface Settings {
   autoAcceptSearchResults?: boolean;
   useChannelPoints?: boolean;
   channelPointRequestsEnabled?: boolean;
+  twitchChannel?: string;
+  voteSkipThreshold?: number;
   [key: string]: any;
 }
 

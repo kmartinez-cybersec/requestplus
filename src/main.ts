@@ -25,6 +25,8 @@ import PlaybackHandler, { songInfo } from './playbackHandler';
 import GTSHandler from './gtsHandler';
 import AMHandler from './amhandler';
 import WindowHandler from './window';
+import tmi from 'tmi.js';
+import VoteSkipHandler from './voteSkipHandler';
 
 var handleStartupEvent = function() {
   if (process.platform !== 'win32') {
@@ -228,6 +230,9 @@ let twitchAccessToken: string | undefined;
 let twitchUser: TwitchUser | undefined;
 let kickAccessToken: string | undefined;
 let kickUser: KickUser | undefined;
+let voteSkipHandler: VoteSkipHandler;
+let voteSkipClient: tmi.Client | null = null;
+let voteSkipChannelConnected: string = '';
 let queueHandler: QueueHandler;
 let currentTrackId: string | null = null;
 let currentTrackId2: string | null = null;
@@ -497,6 +502,7 @@ async function checkCurrentlyPlayingTrack(trackData: TrackData): Promise<void> {
         Logger.info(`Now playing from queue: ${track.title} by ${track.artist}`);
         
         currentTrackId2 = matchingQueueItemId;
+        voteSkipHandler?.reset();
 
         setTimeout(async () => {
             await queueHandler.removeFromQueueById(matchingQueueItemId);
@@ -661,6 +667,7 @@ async function createWindow(): Promise<void> {
     setupDeepLinkHandling(mainWindow);
     settings = await settingsHandler.load();
     queueHandler = new QueueHandler(Logger, mainWindow, settings);
+    updateVoteSkipListener(settings);
 
         
     if (!WSServer && !(global as any).ISAUTHING) {
@@ -801,11 +808,66 @@ function createStartupOobeWindow(): BrowserWindow {
     return oobeWindow;
 }
 
+function updateVoteSkipListener(updatedSettings: Settings): void {
+    const channel = (updatedSettings.twitchChannel || '').trim().toLowerCase();
+
+    if (!voteSkipHandler) {
+        voteSkipHandler = new VoteSkipHandler(updatedSettings.voteSkipThreshold || 8);
+    } else {
+        voteSkipHandler.setThreshold(updatedSettings.voteSkipThreshold || 8);
+    }
+
+    // No channel configured — make sure nothing is connected.
+    if (!channel) {
+        if (voteSkipClient) {
+            voteSkipClient.disconnect().catch(() => {});
+            voteSkipClient = null;
+            voteSkipChannelConnected = '';
+        }
+        return;
+    }
+
+    // Already connected to the right channel — nothing to do.
+    if (voteSkipClient && voteSkipChannelConnected === channel) {
+        return;
+    }
+
+    // Channel changed or not connected yet — (re)connect.
+    if (voteSkipClient) {
+        voteSkipClient.disconnect().catch(() => {});
+        voteSkipClient = null;
+    }
+
+    voteSkipClient = new tmi.Client({ channels: [channel] });
+    voteSkipChannelConnected = channel;
+
+    voteSkipClient.connect().catch(err => {
+        Logger?.error('[VoteSkip] Connection failed:', err);
+    });
+
+    voteSkipClient.on('message', (_channel, tags, message, self) => {
+        if (self) return;
+        if (message.trim().toLowerCase() !== '!voteskip') return;
+
+        const username = tags['display-name'] || tags.username || 'unknown';
+        const result = voteSkipHandler.addVote(username);
+
+        if (result.alreadyVoted) return;
+
+        sendToast(`Vote skip: ${result.count}/${result.threshold}`, 'info', 3000);
+
+        if (result.triggered) {
+            performSongSkip();
+        }
+    });
+}
+
 function applySettingsToRuntime(updatedSettings: Settings): void {
     playbackHandler?.updateSettings(updatedSettings.platform);
     apiHandler?.updateSettings(updatedSettings);
     gtsHandler?.updateSettings(updatedSettings);
     amHandler?.updateSettings(updatedSettings);
+    updateVoteSkipListener(updatedSettings);
 
     if (playbackHandler) {
         updateIntervalForSongInfo();
@@ -894,15 +956,12 @@ ipcMain.handle('song-pause', async (): Promise<void> => {
     }
 });
 
-ipcMain.handle('song-skip', async (): Promise<void> => {
-    const platform = settings.platform
-    
+async function performSongSkip(): Promise<void> {
+    const platform = settings.platform;
+
     if (platform === 'spotify' && WSServer) {
         WSServer.WSSendToType({ command: 'Next' } as WSCommand, 'spotify');
     } else if (platform === 'youtube' && ytManager) {
-        // Push the next queued request into Pear before skipping so it plays immediately.
-        // Exclude the track that's currently playing — otherwise skip would re-add and
-        // replay the same song from the start.
         if (queueHandler) {
             const nextTrack = queueHandler.getQueue().items.find(
                 item => !item.isQueued && item.id !== currentTrackId2
@@ -920,6 +979,10 @@ ipcMain.handle('song-skip', async (): Promise<void> => {
     } else if (platform === 'soundcloud' && WSServer) {
         WSServer.WSSendToType({ command: 'Next' } as WSCommand, 'soundcloud');
     }
+}
+
+ipcMain.handle('song-skip', async (): Promise<void> => {
+    await performSongSkip();
 });
 
 ipcMain.handle('play-track-at-index', async (event: Electron.IpcMainInvokeEvent, index: number): Promise<void> => {
