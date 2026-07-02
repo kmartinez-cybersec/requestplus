@@ -184,23 +184,31 @@ export class WindowHandler {
     window.once('ready-to-show', () => window.show());
   }
 
+  private handle(channel: string, listener: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any): void {
+    // Idempotent registration: if this channel is somehow already bound
+    // (e.g. WindowHandler gets constructed more than once in a process),
+    // drop the old binding first instead of letting Electron throw.
+    ipcMain.removeHandler(channel);
+    ipcMain.handle(channel, listener);
+  }
+
   private registerIpcHandlers(): void {
-    ipcMain.handle('window-minimize', (event) => {
+    this.handle('window-minimize', (event) => {
       BrowserWindow.fromWebContents(event.sender)?.minimize();
     });
 
-    ipcMain.handle('window-close', (event) => {
+    this.handle('window-close', (event) => {
       BrowserWindow.fromWebContents(event.sender)?.close();
     });
 
-    ipcMain.handle('settings:load', () => this.loadSettings());
+    this.handle('settings:load', () => this.loadSettings());
 
-    ipcMain.handle('settings:save', (_event, settings: RequestPlusSettings) => {
+    this.handle('settings:save', (_event, settings: RequestPlusSettings) => {
       const current = this.loadSettings();
       return this.saveSettings({ ...current, ...settings });
     });
 
-    ipcMain.handle('oobe:complete', async (_event, settings: RequestPlusSettings = {}) => {
+    this.handle('oobe:complete', async (_event, settings: RequestPlusSettings = {}) => {
       const current = this.loadSettings();
       this.saveSettings({ ...current, ...settings, oobeCompleted: true });
 
@@ -217,10 +225,9 @@ export class WindowHandler {
       return true;
     });
 
-    ipcMain.handle('oobe:overlay', (): string | null => {
+    this.handle('oobe:overlay', (): string | null => {
         return overlayPath;
     });
-
   }
 }
 
