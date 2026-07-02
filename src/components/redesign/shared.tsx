@@ -28,7 +28,8 @@ export interface AppSettings {
   platform: string; filterExplicit: boolean; gtsEnabled: boolean;
   theme: string; appleMusicAppToken: string; ciderApiVersion: "3" | "4";
   ciderV4AppToken: string; primarySearchPlatform: string;
-  showNotifications: boolean; [key: string]: any;
+  showNotifications: boolean; twitchChannel: string; voteSkipThreshold: number;
+  [key: string]: any;
 }
 
 export const fmt = (ms: number) => {

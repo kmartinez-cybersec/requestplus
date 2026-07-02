@@ -285,6 +285,28 @@ export function SettingsView({ settings, setSettings, user, setUser, overlayPath
               />
             </div>
           )}
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-white">Twitch Channel</p>
+              <p className="mt-0.5 text-[11px] leading-[1.5] text-slate-600">Your Twitch login name. Leave blank to disable !voteskip.</p>
+            </div>
+            <input
+              type="text" placeholder="yourtwitchname" value={settings.twitchChannel || ""}
+              onChange={(e) => p({ twitchChannel: e.target.value.trim().toLowerCase() })}
+              className="w-40 rounded-xl border border-violet-500/20 bg-slate-950/70 px-2.5 py-1.5 text-right text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-white">Votes Needed to Skip</p>
+              <p className="mt-0.5 text-[11px] leading-[1.5] text-slate-600">Unique viewers required to skip via !voteskip</p>
+            </div>
+            <input
+              type="number" min={2} value={settings.voteSkipThreshold || 8}
+              onChange={(e) => p({ voteSkipThreshold: Math.max(2, parseInt(e.target.value) || 8) })}
+              className="w-16 rounded-xl border border-violet-500/20 bg-slate-950/70 px-2.5 py-1.5 text-right text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-violet-500"
+            />
+          </div>
           <ToggleRow label="Auto-accept Search" desc="Accept first search result automatically" checked={!!settings.autoAcceptSearchResults} onChange={(v) => p({ autoAcceptSearchResults: v })} />
           <ToggleRow
             label={t("CLIENT_CHANNEL_POINTS_TITLE", locale)}
