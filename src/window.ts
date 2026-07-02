@@ -205,7 +205,7 @@ export class WindowHandler {
       this.saveSettings({ ...current, ...settings, oobeCompleted: true });
 
       if (this.oobeWindow && !this.oobeWindow.isDestroyed()) {
-        this.oobeWindow.close();
+        this.oobeWindow.destroy();
       }
 
       if (this.onOobeComplete) {
