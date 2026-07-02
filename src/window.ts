@@ -185,11 +185,11 @@ export class WindowHandler {
   }
 
   private registerIpcHandlers(): void {
-    ipcMain.handle('window:minimize', (event) => {
+    ipcMain.handle('window-minimize', (event) => {
       BrowserWindow.fromWebContents(event.sender)?.minimize();
     });
 
-    ipcMain.handle('window:close', (event) => {
+    ipcMain.handle('window-close', (event) => {
       BrowserWindow.fromWebContents(event.sender)?.close();
     });
 
