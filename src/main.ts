@@ -56,7 +56,9 @@ var handleStartupEvent = function() {
   }
 };
 
-handleStartupEvent();
+if (handleStartupEvent()) {
+  process.exit(0);
+}
 updateElectronApp();
 
 
